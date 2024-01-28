@@ -544,24 +544,18 @@ pub const JsonRpcProvider = struct {
         var headers = std.http.Headers{ .allocator = self.allocator };
         defer headers.deinit();
 
-        // Add content length header
-        var length_str: [32]u8 = undefined;
-        const length_str_len = std.fmt.formatIntBuf(length_str[0..], data.len, 10, .lower, .{});
-        try headers.append("content-length", length_str[0..length_str_len]);
-
         try headers.append("content-type", "application/json");
 
         // Perform the request
-        var req = try client.open(.POST, self.endpoint, headers, .{});
-        defer req.deinit();
+        var result = try client.fetch(self.allocator, .{ .location = .{
+            .uri = self.endpoint,
+        }, .method = .POST, .headers = headers, .payload = .{ .string = data } });
 
-        try req.send(.{});
-        _ = try req.write(data);
-        try req.wait();
+        defer result.deinit();
 
         // Read entire result into buffer
         self.response_buffer.items.len = 0;
-        try req.reader().readAllArrayList(&self.response_buffer, MAX_RESPONSE_BUFFER_SIZE);
+        try self.response_buffer.appendSlice(result.body.?);
     }
 
     /// Stringifies given block tag, uses internal buffer
