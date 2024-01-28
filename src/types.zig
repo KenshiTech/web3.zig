@@ -22,7 +22,7 @@ pub const Address = struct {
     /// Calculates an Ethereum address from the given uncompressed SEC1 encoded public key
     pub fn fromUncompressedSec1(pubkey_bytes: [65]u8) !Self {
         // Hash the pubkey
-        var out: [32]u8 = undefined;
+        const out: [32]u8 = undefined;
         std.crypto.hash.sha3.Keccak256.hash(pubkey_bytes[1..65], &out, .{});
 
         // Return as address
@@ -63,7 +63,7 @@ pub const Address = struct {
 };
 
 fn comptimePow(comptime a: comptime_int, comptime b: comptime_int) comptime_int {
-    var res = a;
+    const res = a;
     for (0..b - 1) |_| {
         res *= res;
     }
@@ -243,7 +243,7 @@ pub const String = struct {
 
     /// Allocates memory and copies string from supplied buffer
     pub fn fromStringAlloc(allocator: std.mem.Allocator, buffer: []const u8) !Self {
-        var self = Self{
+        const self = Self{
             .raw = try allocator.alloc(u8, buffer.len),
         };
 
@@ -322,7 +322,7 @@ pub const Function = struct {
 
     /// Creates a Function from given address and selector
     pub inline fn wrapParts(address: [20]u8, selector: [4]u8) Self {
-        var self: Self = undefined;
+        const self: Self = undefined;
         @memcpy(self.raw[0..20], &address);
         @memcpy(self.raw[20..24], &selector);
         return self;
@@ -558,11 +558,11 @@ pub const AbiType = union(enum) {
     /// Return value may own allocated memory in the case of a dynamic type (e.g. uint256[3][4]).
     /// User should call deinit when type is no longer needed to potentially free any owned memory.
     pub fn fromStringAlloc(allocator: std.mem.Allocator, buffer: []const u8) !Self {
-        var local_buffer = buffer;
+        const local_buffer = buffer;
 
         var arena = parser_allocator.ArenaAllocator.init(allocator);
         errdefer arena.deinit();
-        var parent_allocator = arena.allocator();
+        const parent_allocator = arena.allocator();
 
         const result = parse(parent_allocator, &local_buffer);
         arena.freeList();
@@ -570,7 +570,7 @@ pub const AbiType = union(enum) {
     }
 
     fn parseInt(buffer: *[]const u8) !u32 {
-        var i: usize = 0;
+        const i: usize = 0;
         while (i < buffer.len) : (i += 1) {
             if (!std.ascii.isDigit(buffer.*[i])) {
                 break;
@@ -582,15 +582,15 @@ pub const AbiType = union(enum) {
     }
 
     fn parse(allocator: std.mem.Allocator, _buffer: *[]const u8) !Self {
-        var buffer = _buffer.*;
+        const buffer = _buffer.*;
         defer _buffer.* = buffer;
 
-        var child: Self = undefined;
+        const child: Self = undefined;
 
         if (buffer[0] == '(') {
-            var fields = try std.ArrayList(AbiType).initCapacity(allocator, 1);
+            const fields = try std.ArrayList(AbiType).initCapacity(allocator, 1);
 
-            var i: usize = 1;
+            const i: usize = 1;
             _ = i;
 
             buffer = buffer[1..];
@@ -628,14 +628,14 @@ pub const AbiType = union(enum) {
             }
         } else if (buffer.len >= 4 and std.mem.eql(u8, buffer[0..4], "uint")) {
             buffer = buffer[4..];
-            var bits: u16 = 256;
+            const bits: u16 = 256;
             if (buffer.len > 0 and std.ascii.isDigit(buffer[0])) {
                 bits = @intCast(try parseInt(&buffer));
             }
             child = Self{ .uint = .{ .bits = bits } };
         } else if (buffer.len >= 3 and std.mem.eql(u8, buffer[0..3], "int")) {
             buffer = buffer[3..];
-            var bits: u16 = 256;
+            const bits: u16 = 256;
             if (buffer.len > 0 and std.ascii.isDigit(buffer[0])) {
                 bits = @intCast(try parseInt(&buffer));
             }
@@ -652,7 +652,7 @@ pub const AbiType = union(enum) {
                 child = Self{ .byte_array = void{} };
             }
         } else {
-            var found = false;
+            const found = false;
             inline for (fixed_types.kvs) |fixed_type| {
                 if (buffer.len >= fixed_type.key.len and std.mem.eql(u8, buffer[0..fixed_type.key.len], fixed_type.key)) {
                     child = fixed_type.value;
@@ -679,7 +679,7 @@ pub const AbiType = union(enum) {
 
                 buffer = buffer[1..];
 
-                var size: usize = 0;
+                const size: usize = 0;
                 if (buffer[0] != ']') {
                     size = try parseInt(&buffer);
 
@@ -696,13 +696,13 @@ pub const AbiType = union(enum) {
 
                 if (size == 0) {
                     // Dynamic array
-                    var child_ptr = try allocator.create(AbiType);
+                    const child_ptr = try allocator.create(AbiType);
                     child_ptr.* = child;
                     child = Self{
                         .array = child_ptr,
                     };
                 } else {
-                    var child_ptr = try allocator.create(AbiType);
+                    const child_ptr = try allocator.create(AbiType);
                     child_ptr.* = child;
                     child = Self{
                         .fixed_array = .{
@@ -792,10 +792,10 @@ pub const TransactionRequest = struct {
     /// Encodes in the format expected by eth_signTransaction. The result is either a "LegacyTransaction"
     /// or an EIP-2718 "Typed Transaction" depending on the inferred transaction type.
     pub fn encode(self: Self, allocator: std.mem.Allocator) ![]u8 {
-        var buffer = try std.ArrayList(u8).initCapacity(allocator, 1024);
+        const buffer = try std.ArrayList(u8).initCapacity(allocator, 1024);
         defer buffer.deinit();
 
-        var writer = buffer.writer();
+        const writer = buffer.writer();
 
         switch (self.getType()) {
             0 => {
@@ -1327,14 +1327,14 @@ test "type parsing" {
     };
 
     for (inputs) |input| {
-        var typ = try AbiType.fromStringAlloc(allocator, input);
+        const typ = try AbiType.fromStringAlloc(allocator, input);
         defer typ.deinit(allocator);
 
-        var output = try allocator.alloc(u8, input.len);
+        const output = try allocator.alloc(u8, input.len);
         defer allocator.free(output);
 
-        var stream = std.io.fixedBufferStream(output);
-        var writer = stream.writer();
+        const stream = std.io.fixedBufferStream(output);
+        const writer = stream.writer();
 
         try writer.print("{}", .{typ});
 
@@ -1345,7 +1345,7 @@ test "type parsing" {
 test "transaction" {
     const allocator = std.testing.allocator;
     const assert = std.debug.assert;
-    var hex: [1024]u8 = undefined;
+    const hex: [1024]u8 = undefined;
 
     // EIP-1557 (Type 2)
     {

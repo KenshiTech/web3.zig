@@ -81,7 +81,7 @@ pub const ArenaAllocator = struct {
     }
 
     inline fn pushNode(self: *ArenaAllocator, ptr: usize, log2_buf_align: u8, size: usize) !void {
-        var node = try self.child_allocator.create(BufNode);
+        const node = try self.child_allocator.create(BufNode);
         node.* = BufNode{ .data = .{
             .ptr = ptr,
             .log2_buf_align = log2_buf_align,
@@ -91,7 +91,7 @@ pub const ArenaAllocator = struct {
     }
 
     fn alloc(ctx: *anyopaque, len: usize, log2_ptr_align: u8, ret_addr: usize) ?[*]u8 {
-        var self: *ArenaAllocator = @ptrCast(@alignCast(ctx));
+        const self: *ArenaAllocator = @ptrCast(@alignCast(ctx));
         const result = self.child_allocator.rawAlloc(len, log2_ptr_align, ret_addr);
         if (result) |buf| {
             self.pushNode(@intFromPtr(buf), log2_ptr_align, len) catch @panic("Out of memory");
@@ -100,7 +100,7 @@ pub const ArenaAllocator = struct {
     }
 
     fn resize(ctx: *anyopaque, buf: []u8, log2_buf_align: u8, new_len: usize, ret_addr: usize) bool {
-        var self: *ArenaAllocator = @ptrCast(@alignCast(ctx));
+        const self: *ArenaAllocator = @ptrCast(@alignCast(ctx));
         const result = self.child_allocator.rawResize(buf, log2_buf_align, new_len, ret_addr);
         if (result) {
             self.pushNode(@intFromPtr(buf.ptr), log2_buf_align, new_len) catch @panic("Out of memory");
@@ -109,20 +109,20 @@ pub const ArenaAllocator = struct {
     }
 
     fn free(ctx: *anyopaque, buf: []u8, log2_buf_align: u8, ret_addr: usize) void {
-        var self: *ArenaAllocator = @ptrCast(@alignCast(ctx));
+        const self: *ArenaAllocator = @ptrCast(@alignCast(ctx));
         self.child_allocator.rawFree(buf, log2_buf_align, ret_addr);
         self.pushNode(@intFromPtr(buf.ptr), log2_buf_align, 0) catch @panic("Out of memory");
     }
 };
 
 test "arena allocator" {
-    var arena = ArenaAllocator.init(std.testing.allocator);
-    var allocator = arena.allocator();
+    const arena = ArenaAllocator.init(std.testing.allocator);
+    const allocator = arena.allocator();
 
-    var a = try allocator.alloc(u8, 256);
+    const a = try allocator.alloc(u8, 256);
     _ = a;
-    var b = try allocator.alloc(u8, 256);
-    var c = try allocator.alloc(u8, 256);
+    const b = try allocator.alloc(u8, 256);
+    const c = try allocator.alloc(u8, 256);
     _ = c;
 
     allocator.free(b);

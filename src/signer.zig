@@ -35,7 +35,7 @@ pub const LocalSigner = struct {
 
     /// Creates a signer from the given hex encoded private key
     pub fn fromString(allocator: std.mem.Allocator, private_key_: []const u8, options: Options) !Self {
-        var private_key = private_key_;
+        const private_key = private_key_;
 
         if (private_key.len == 66 and std.mem.eql(u8, private_key[0..2], "0x")) {
             private_key = private_key[2..];
@@ -45,7 +45,7 @@ pub const LocalSigner = struct {
             return error.UnexpectedLength;
         }
 
-        var raw: [32]u8 = undefined;
+        const raw: [32]u8 = undefined;
         _ = try std.fmt.hexToBytes(&raw, private_key);
         return fromPrivateKey(allocator, raw, options);
     }
@@ -56,7 +56,7 @@ pub const LocalSigner = struct {
         const account_node = try web3.hdwallet.Node.fromSeedAndPath(&seed, options.path);
         const node = try account_node.derive(options.index);
 
-        var raw = try node.getPrivateKey();
+        const raw = try node.getPrivateKey();
         return fromPrivateKey(allocator, raw, .{
             .chain_id = options.chain_id,
         });
@@ -84,7 +84,7 @@ pub const LocalSigner = struct {
     /// Errors if the request has an invalid from field.
     /// Errors if the request chain_id does not match the signer's chain_id.
     pub fn signTransaction(self: *const Self, tx_: web3.TransactionRequest) !web3.TransactionRequest {
-        var tx = tx_;
+        const tx = tx_;
 
         if (tx.chain_id == null) {
             tx.chain_id = self.chain_id;
@@ -95,7 +95,7 @@ pub const LocalSigner = struct {
         const raw_tx = try tx.encode(self.allocator);
         defer self.allocator.free(raw_tx);
 
-        var signature = try self.signing_key.sign(raw_tx);
+        const signature = try self.signing_key.sign(raw_tx);
         signature.addChainId(self.chain_id) catch unreachable;
 
         tx.addSignature(signature);
@@ -105,7 +105,7 @@ pub const LocalSigner = struct {
 
     // Implementation of `web3.Signer.getAddress`
     fn signerGetAddress(ctx: *anyopaque) !web3.Address {
-        var self: *Self = @ptrCast(@alignCast(ctx));
+        const self: *Self = @ptrCast(@alignCast(ctx));
         return self.address;
     }
 
@@ -178,7 +178,7 @@ pub const SigningProvider = struct {
     /// Fills fee parameters with estimates based on current network conditions.
     /// Errors if from is not empty and set to an unknown address.
     pub fn populateTransaction(self: *Self, tx_: web3.TransactionRequest, speed: web3.FeeEstimateSpeed) !web3.TransactionRequest {
-        var tx = tx_;
+        const tx = tx_;
 
         const addr = try self.signer.getAddress();
 
@@ -224,7 +224,7 @@ pub const SigningProvider = struct {
 
     /// Implementation of `web3.Provider.send`
     fn providerSend(ctx: *anyopaque, tx_: web3.TransactionRequest) !web3.Hash {
-        var self: *Self = @ptrCast(@alignCast(ctx));
+        const self: *Self = @ptrCast(@alignCast(ctx));
 
         const tx = try self.populateTransaction(tx_, .average);
         const signed_tx = try self.signer.signTransaction(self.allocator, tx);
@@ -235,9 +235,9 @@ pub const SigningProvider = struct {
 
     /// Implementation of `web3.Provider.call`
     fn providerCall(ctx: *anyopaque, allocator: std.mem.Allocator, tx_: web3.TransactionRequest, block_tag: ?web3.BlockTag) ![]const u8 {
-        var self: *Self = @ptrCast(@alignCast(ctx));
+        const self: *Self = @ptrCast(@alignCast(ctx));
 
-        var tx = tx_;
+        const tx = tx_;
 
         if (tx.from == null) {
             tx.from = try self.signer.getAddress();
@@ -248,9 +248,9 @@ pub const SigningProvider = struct {
 
     /// Implementation of `web3.Provider.estimateGas`
     fn providerEstimateGas(ctx: *anyopaque, tx_: web3.TransactionRequest) !u256 {
-        var self: *Self = @ptrCast(@alignCast(ctx));
+        const self: *Self = @ptrCast(@alignCast(ctx));
 
-        var tx = tx_;
+        const tx = tx_;
 
         if (tx.from == null) {
             tx.from = try self.signer.getAddress();
@@ -261,19 +261,19 @@ pub const SigningProvider = struct {
 
     /// Implementation of `web3.Provider.sendRaw`
     fn providerSendRaw(ctx: *anyopaque, raw_tx: []const u8) !web3.Hash {
-        var self: *Self = @ptrCast(@alignCast(ctx));
+        const self: *Self = @ptrCast(@alignCast(ctx));
         return self.child_provider.sendRaw(raw_tx);
     }
 
     /// Implementation of `web3.Provider.getTransactionCount`
     fn providerGetTransactionCount(ctx: *anyopaque, address: web3.Address, block_tag: ?web3.BlockTag) !u256 {
-        var self: *Self = @ptrCast(@alignCast(ctx));
+        const self: *Self = @ptrCast(@alignCast(ctx));
         return self.child_provider.getTransactionCount(address, block_tag);
     }
 
     /// Implementation of `web3.Provider.getFeeEstimate`
     fn providerGetFeeEstimate(ctx: *anyopaque, speed: web3.FeeEstimateSpeed) !web3.FeeEstimate {
-        var self: *Self = @ptrCast(@alignCast(ctx));
+        const self: *Self = @ptrCast(@alignCast(ctx));
         return self.child_provider.getFeeEstimate(speed);
     }
 };

@@ -5,12 +5,10 @@ pub fn build(b: *std.Build) !void {
     const optimize = b.standardOptimizeOption(.{});
 
     // Module
-    const web3_module = b.addModule("web3", .{
-        .root_source_file = .{
-            .path = "src/web3.zig",
-        },
-        .dependencies = &.{},
-    });
+    const web3_module = b.addModule("web3", .{ .root_source_file = .{
+        .path = "src/web3.zig",
+    } });
+
     try b.modules.put(b.dupe("web3"), web3_module);
 
     // Creates a step for unit testing
@@ -28,7 +26,7 @@ pub fn build(b: *std.Build) !void {
 
     // Examples
     const example_dir_path = try std.fs.path.join(b.allocator, &[_][]const u8{ "src", "examples" });
-    const examples_dir = std.fs.cwd().openIterableDir(example_dir_path, .{}) catch return;
+    const examples_dir = std.fs.cwd().openDir(example_dir_path, .{}) catch return;
 
     var examples_dir_iter = examples_dir.iterate();
     while (try examples_dir_iter.next()) |path| {
@@ -43,7 +41,7 @@ pub fn build(b: *std.Build) !void {
                         .optimize = optimize,
                     });
 
-                    exe.addModule("web3", web3_module);
+                    exe.root_module.addImport("web3", web3_module);
 
                     b.installArtifact(exe);
 

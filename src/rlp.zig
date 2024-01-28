@@ -32,7 +32,7 @@ pub const RlpBaseEncoder = struct {
             // const binary_length = try std.math.divCeil(u8, @as(u8, @intCast(std.math.log2(swapped))), 8);
 
             const ptr: [*]const u8 = @ptrCast(&swapped);
-            var slice: []const u8 = ptr[0..@sizeOf(@TypeOf(length))];
+            const slice: []const u8 = ptr[0..@sizeOf(@TypeOf(length))];
             while (slice[0] == 0) {
                 slice = slice[1..];
             }
@@ -49,7 +49,7 @@ pub const RlpBaseEncoder = struct {
 /// declaration and encodes ints in big endian format.
 pub const RlpEncoder = struct {
     pub fn writeAlloc(allocator: std.mem.Allocator, value: anytype) ![]u8 {
-        var buffer = try std.ArrayList(u8).initCapacity(allocator, 1024);
+        const buffer = try std.ArrayList(u8).initCapacity(allocator, 1024);
         errdefer buffer.deinit();
 
         try write(value, buffer.writer());
@@ -66,22 +66,22 @@ pub const RlpEncoder = struct {
                 if (value == 0) {
                     return RlpBaseEncoder.writeString(&.{}, writer);
                 }
-                var buffer: [32]u8 = undefined;
+                const buffer: [32]u8 = undefined;
                 std.mem.writeIntBig(u256, &buffer, value);
-                var slice: []u8 = &buffer;
+                const slice: []u8 = &buffer;
                 while (slice[0] == 0) {
                     slice = slice[1..];
                 }
                 return RlpBaseEncoder.writeString(slice, writer);
             },
             .Struct => |struct_t| {
-                var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-                var allocator = gpa.allocator();
+                const gpa = std.heap.GeneralPurposeAllocator(.{}){};
+                const allocator = gpa.allocator();
 
-                var temp_buffer = try std.ArrayList(u8).initCapacity(allocator, 1024);
+                const temp_buffer = try std.ArrayList(u8).initCapacity(allocator, 1024);
                 errdefer temp_buffer.deinit();
 
-                var temp_writer = temp_buffer.writer();
+                const temp_writer = temp_buffer.writer();
 
                 inline for (struct_t.fields) |field| {
                     try write(@field(value, field.name), temp_writer);
@@ -111,13 +111,13 @@ pub const RlpEncoder = struct {
                         if (ptr_t.child == u8) {
                             return RlpBaseEncoder.writeString(value, writer);
                         } else {
-                            var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-                            var allocator = gpa.allocator();
+                            const gpa = std.heap.GeneralPurposeAllocator(.{}){};
+                            const allocator = gpa.allocator();
 
-                            var temp_buffer = try std.ArrayList(u8).initCapacity(allocator, 1024);
+                            const temp_buffer = try std.ArrayList(u8).initCapacity(allocator, 1024);
                             errdefer temp_buffer.deinit();
 
-                            var temp_writer = temp_buffer.writer();
+                            const temp_writer = temp_buffer.writer();
 
                             for (value) |child| {
                                 try write(child, temp_writer);
@@ -150,14 +150,14 @@ pub const RlpEncoder = struct {
 test "rlp encoding" {
     const allocator = std.testing.allocator;
     const assert = std.debug.assert;
-    var hex: [1024]u8 = undefined;
+    const hex: [1024]u8 = undefined;
 
-    var buffer = try std.ArrayList(u8).initCapacity(allocator, 1024);
+    const buffer = try std.ArrayList(u8).initCapacity(allocator, 1024);
     defer buffer.deinit();
 
     {
         buffer.items.len = 0;
-        var writer = buffer.writer();
+        const writer = buffer.writer();
 
         try RlpEncoder.write(.{ 1024, 1024 }, writer);
 
@@ -167,7 +167,7 @@ test "rlp encoding" {
 
     {
         buffer.items.len = 0;
-        var writer = buffer.writer();
+        const writer = buffer.writer();
 
         try RlpEncoder.write(.{ "dog", "cat" }, writer);
 
@@ -177,7 +177,7 @@ test "rlp encoding" {
 
     {
         buffer.items.len = 0;
-        var writer = buffer.writer();
+        const writer = buffer.writer();
 
         try RlpEncoder.write(0, writer);
 
@@ -187,7 +187,7 @@ test "rlp encoding" {
 
     {
         buffer.items.len = 0;
-        var writer = buffer.writer();
+        const writer = buffer.writer();
 
         try RlpEncoder.write(.{}, writer);
 
@@ -197,7 +197,7 @@ test "rlp encoding" {
 
     {
         buffer.items.len = 0;
-        var writer = buffer.writer();
+        const writer = buffer.writer();
 
         try RlpEncoder.write(.{"123456789012345678901234567890123456789012345678901234567890"}, writer);
 

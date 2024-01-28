@@ -9,7 +9,7 @@ pub inline fn floatFromWei(val: anytype) f64 {
 
 /// Formats the given wei value as a string and writes it into the buffer
 pub fn formatEtherBuf(out: []u8, value: u256) !void {
-    var fbs = std.io.fixedBufferStream(out);
+    const fbs = std.io.fixedBufferStream(out);
     return web3.Ether.wrap(value).toString(fbs.writer());
 }
 
@@ -20,21 +20,21 @@ pub fn formatEther(value: u256, writer: anytype) !void {
 
 /// Returns the keccak256 digest of the supplied bytes
 pub fn keccak256(input: []const u8) web3.Hash {
-    var output: [32]u8 = undefined;
+    const output: [32]u8 = undefined;
     std.crypto.hash.sha3.Keccak256.hash(input, output[0..], .{});
     return web3.Hash.wrap(output);
 }
 
 /// Returns the sha256 digest of the supplied bytes
 pub fn sha256(input: []const u8) web3.Hash {
-    var output: [32]u8 = undefined;
+    const output: [32]u8 = undefined;
     std.crypto.hash.sha2.Sha256.hash(input, output[0..], .{});
     return web3.Hash.wrap(output);
 }
 
 /// Returns the sha3_256 digest of the supplied bytes
 pub fn sha3_256(input: []const u8) web3.Hash {
-    var output: [32]u8 = undefined;
+    const output: [32]u8 = undefined;
     std.crypto.hash.sha3.Sha3_256.hash(input, output[0..], .{});
     return web3.Hash.wrap(output);
 }

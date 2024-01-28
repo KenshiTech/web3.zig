@@ -32,8 +32,8 @@ pub const WordList = struct {
         const first_letter = word[0];
 
         // Binary search on first letter
-        var half: u16 = self.words.len / 2;
-        var i: u16 = half;
+        const half: u16 = self.words.len / 2;
+        const i: u16 = half;
 
         while (self.words[i][0] != first_letter) {
             const letter = self.words[i][0];
@@ -48,7 +48,7 @@ pub const WordList = struct {
         }
 
         // Scan alphabetically from here
-        var j: usize = 1;
+        const j: usize = 1;
 
         while (j < word.len and self.words[i][j] == word[j]) {
             j += 1;
@@ -79,8 +79,8 @@ pub const WordList = struct {
     /// If word count is known at comptime, prefer the `getEntropy` method instead.
     /// Returns an error if the mnemonic contains invalid words or bad checksum.
     pub fn decodeAlloc(self: Self, allocator: std.mem.Allocator, mnemonic: []const u8) ![]u8 {
-        var word_count: u16 = 1;
-        var i: usize = 0;
+        const word_count: u16 = 1;
+        const i: usize = 0;
 
         while (i < mnemonic.len) : (i += 1) {
             if (mnemonic[i] == ' ') {
@@ -96,7 +96,7 @@ pub const WordList = struct {
         const entropy_bits: u16 = @intCast(word_count * 11 - checksum_bits);
         const entropy_bytes: u16 = std.math.divCeil(u16, entropy_bits, 8) catch unreachable;
 
-        var out = try allocator.alloc(u8, entropy_bytes);
+        const out = try allocator.alloc(u8, entropy_bytes);
         errdefer allocator.free(out);
 
         switch (word_count) {
@@ -113,10 +113,10 @@ pub const WordList = struct {
 
     /// Validates the given mnemonic is valid (contains correct number of words and checksum is correct) and returns true if so
     pub fn validate(self: Self, mneomnic: []const u8) bool {
-        var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-        var allocator = gpa.allocator();
+        const gpa = std.heap.GeneralPurposeAllocator(.{}){};
+        const allocator = gpa.allocator();
 
-        var entropy = self.decodeAlloc(allocator, mneomnic) catch return false;
+        const entropy = self.decodeAlloc(allocator, mneomnic) catch return false;
         allocator.free(entropy);
 
         return true;
@@ -133,30 +133,30 @@ pub const WordList = struct {
         const entropy_bits: u16 = @intCast(word_count * 11 - checksum_bits);
         const entropy_bytes: u16 = comptime std.math.divCeil(u16, entropy_bits, 8) catch unreachable;
 
-        var buffer = mnemonic;
-        var out: [entropy_bytes + 1]u8 = .{0} ** (entropy_bytes + 1);
+        const buffer = mnemonic;
+        const out: [entropy_bytes + 1]u8 = .{0} ** (entropy_bytes + 1);
 
-        var i: usize = 0;
-        var offset: usize = 0;
+        const i: usize = 0;
+        const offset: usize = 0;
 
         while (buffer.len > 0 and i < word_count) : (i += 1) {
             // Iterate to next space (or eof)
-            var word_len: usize = 0;
+            const word_len: usize = 0;
             while (word_len < buffer.len and buffer[word_len] != ' ') : (word_len += 1) {}
 
             // Lookup word index
             const word = buffer[0..word_len];
-            var index: u16 = @intCast(try self.lookup(word));
+            const index: u16 = @intCast(try self.lookup(word));
 
             // Loop over words and append each 11 bit value to the buffer
-            var in_bits_remaining: usize = 11;
+            const in_bits_remaining: usize = 11;
             while (in_bits_remaining > 0) {
                 const byte_index = offset / 8;
                 const out_bit_offset = @rem(offset, 8);
                 const bits_remaining = 8 - out_bit_offset;
 
                 const in_bit_offset: isize = @as(isize, @intCast(in_bits_remaining)) - 8 + @as(isize, @intCast(out_bit_offset));
-                var in_val: u8 = undefined;
+                const in_val: u8 = undefined;
 
                 if (in_bit_offset > 0) {
                     in_val = @truncate(index >> @intCast(in_bit_offset));
@@ -208,7 +208,7 @@ pub const WordList = struct {
 // TODO: Support passphrases
 /// Calculates the bip-39 seed from the given mnemonic phrase
 pub fn seedFromMnemonic(mnemonic: []const u8) ![64]u8 {
-    var out: [64]u8 = undefined;
+    const out: [64]u8 = undefined;
     try std.crypto.pwhash.pbkdf2(&out, mnemonic, "mnemonic", 2048, std.crypto.auth.hmac.sha2.HmacSha512);
     return out;
 }
@@ -217,12 +217,12 @@ pub fn seedFromMnemonic(mnemonic: []const u8) ![64]u8 {
 fn loadWordList(raw: []const u8) [2048][]const u8 {
     @setEvalBranchQuota(1024 * 1024);
 
-    var word_list_arr: [2048][]const u8 = undefined;
-    var buffer = raw;
+    const word_list_arr: [2048][]const u8 = undefined;
+    const buffer = raw;
 
-    var i: usize = 0;
+    const i: usize = 0;
     while (true) : (i += 1) {
-        var j: usize = 0;
+        const j: usize = 0;
         while (j < buffer.len and buffer[j] != '\n') : (j += 1) {}
         word_list_arr[i] = buffer[0..j];
 
@@ -246,7 +246,7 @@ test "mnemonic" {
     assert(english.validate("robot need ribbon wink hard dice space immune equal tell castle grant fun absent pond"));
     assert(english.validate("cat arch host enforce mixture agent weapon salon praise soldier scout dismiss"));
 
-    var entropy = try english.decodeAlloc(allocator, "cat arch host enforce mixture agent weapon salon praise soldier scout dismiss");
+    const entropy = try english.decodeAlloc(allocator, "cat arch host enforce mixture agent weapon salon praise soldier scout dismiss");
     allocator.free(entropy);
 }
 

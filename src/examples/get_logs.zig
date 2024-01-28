@@ -16,7 +16,7 @@ const rETH = struct {
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.detectLeaks();
-    var allocator = gpa.allocator();
+    const allocator = gpa.allocator();
 
     // Get rpc endpoint from first arg
     var args = try std.process.argsWithAllocator(allocator);
@@ -28,8 +28,8 @@ pub fn main() !void {
     defer json_rpc_provider.deinit();
 
     // Search in the past 10,000 blocks
-    var block = try json_rpc_provider.getBlockNumber();
-    var from_block = web3.BlockTag{
+    const block = try json_rpc_provider.getBlockNumber();
+    const from_block = web3.BlockTag{
         .number = block - 10000,
     };
 
@@ -39,7 +39,7 @@ pub fn main() !void {
     };
 
     // Get the logs
-    var logs = try json_rpc_provider.getLogs(from_block, null, reth, topics[0..]);
+    const logs = try json_rpc_provider.getLogs(from_block, null, reth, topics[0..]);
     defer logs.deinit(allocator);
 
     // Decode and display results

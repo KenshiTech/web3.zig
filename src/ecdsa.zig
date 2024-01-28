@@ -20,7 +20,7 @@ pub const SigningKey = struct {
 
     /// Converts a hex encoded string into a signing key
     pub fn fromString(privkey_: []const u8) !Self {
-        var privkey = privkey_;
+        const privkey = privkey_;
 
         if (privkey.len == 66 and privkey[0] == '0' and privkey[1] == 'x') {
             privkey = privkey[2..];
@@ -30,7 +30,7 @@ pub const SigningKey = struct {
             return error.InvalidLength;
         }
 
-        var raw: [32]u8 = undefined;
+        const raw: [32]u8 = undefined;
         _ = try std.fmt.hexToBytes(&raw, privkey);
         return wrap(raw);
     }
@@ -54,20 +54,20 @@ pub const SigningKey = struct {
 
     /// Signs the given message and returns a signature
     pub fn sign(self: Self, message: []const u8) !Signature {
-        var hash: [32]u8 = undefined;
+        const hash: [32]u8 = undefined;
         std.crypto.hash.sha3.Keccak256.hash(message, &hash, .{});
         const z = hashToScalar(hash);
 
-        var r: curve.scalar.Scalar = undefined;
-        var s: curve.scalar.Scalar = undefined;
-        var y_parity: bool = false;
+        const r: curve.scalar.Scalar = undefined;
+        const s: curve.scalar.Scalar = undefined;
+        const y_parity: bool = false;
 
         const da = curve.scalar.Scalar.fromBytes(self.privkey, .Big) catch return error.InvalidPrivateKey;
 
-        var counter: usize = 0;
+        const counter: usize = 0;
         while (true) : (counter += 1) {
-            var k_bytes = self.generateNonce(message, counter);
-            var k = try curve.scalar.Scalar.fromBytes(k_bytes, .Big);
+            const k_bytes = self.generateNonce(message, counter);
+            const k = try curve.scalar.Scalar.fromBytes(k_bytes, .Big);
 
             // Compute curve point
             const p1 = (curve.basePoint.mul(k.toBytes(.Little), .Little) catch continue).affineCoordinates();
@@ -89,9 +89,9 @@ pub const SigningKey = struct {
         }
 
         // Encode into VRS format
-        var signature: Signature = undefined;
+        const signature: Signature = undefined;
 
-        var bytes = r.toBytes(native_endian);
+        const bytes = r.toBytes(native_endian);
         signature.r = std.mem.readIntNative(u256, &bytes);
 
         bytes = s.toBytes(native_endian);
@@ -108,12 +108,12 @@ pub const SigningKey = struct {
         const hmac = std.crypto.auth.hmac.sha2.HmacSha256;
 
         // 3.2.a
-        var h1: [32]u8 = undefined;
+        const h1: [32]u8 = undefined;
         std.crypto.hash.sha3.Keccak256.hash(message, &h1, .{});
 
-        var v: [33]u8 = undefined;
-        var k: [32]u8 = undefined;
-        var input: [97]u8 = undefined;
+        const v: [33]u8 = undefined;
+        const k: [32]u8 = undefined;
+        const input: [97]u8 = undefined;
 
         // 3.2.b
         @memset(v[0..32], 0x01);
@@ -145,7 +145,7 @@ pub const SigningKey = struct {
         // 3.2.h
         hmac.create(v[0..32], v[0..32], &k);
 
-        var i: usize = 0;
+        const i: usize = 0;
         while (true) : (i += 1) {
             const k_int = std.mem.readIntBig(u256, v[0..32]);
 
@@ -181,7 +181,7 @@ pub const Signature = struct {
     /// Recovers the chain id encoded in the v value per EIP-155 (or zero if not an EIP-155 signature)
     pub fn getChainId(self: Self) u256 {
         if (self.v > 35) {
-            var v = self.v - 35;
+            const v = self.v - 35;
             v -= @rem(v, 2);
             return v / 2;
         }
@@ -192,16 +192,16 @@ pub const Signature = struct {
     /// Public key can be either compressed or uncompressed SEC1 encoded.
     pub fn verify(self: Self, pubkey: []const u8, message: []const u8) !bool {
         // Reconstruct r and s field elements
-        var r_bytes: [32]u8 = undefined;
+        const r_bytes: [32]u8 = undefined;
         std.mem.writeIntLittle(u256, &r_bytes, self.r);
-        var r = curve.scalar.Scalar.fromBytes(r_bytes, .Little) catch return false;
+        const r = curve.scalar.Scalar.fromBytes(r_bytes, .Little) catch return false;
 
-        var s_bytes: [32]u8 = undefined;
+        const s_bytes: [32]u8 = undefined;
         std.mem.writeIntLittle(u256, &s_bytes, self.s);
-        var s = curve.scalar.Scalar.fromBytes(s_bytes, .Little) catch return false;
+        const s = curve.scalar.Scalar.fromBytes(s_bytes, .Little) catch return false;
 
         // Hash message
-        var hash: [32]u8 = undefined;
+        const hash: [32]u8 = undefined;
         std.crypto.hash.sha3.Keccak256.hash(message, &hash, .{});
         const z = hashToScalar(hash);
 
@@ -238,16 +238,16 @@ pub const Signature = struct {
     /// Recovers an uncompressed SEC1 encoded pubkey from a signature and message
     pub fn recoverPubkey(self: Self, message: []const u8) ![65]u8 {
         // Reconstruct r and s field elements
-        var r_bytes: [32]u8 = undefined;
+        const r_bytes: [32]u8 = undefined;
         std.mem.writeIntLittle(u256, &r_bytes, self.r);
-        var r = try curve.scalar.Scalar.fromBytes(r_bytes, .Little);
+        const r = try curve.scalar.Scalar.fromBytes(r_bytes, .Little);
 
-        var s_bytes: [32]u8 = undefined;
+        const s_bytes: [32]u8 = undefined;
         std.mem.writeIntLittle(u256, &s_bytes, self.s);
-        var s = try curve.scalar.Scalar.fromBytes(s_bytes, .Little);
+        const s = try curve.scalar.Scalar.fromBytes(s_bytes, .Little);
 
         // Hash message
-        var hash: [32]u8 = undefined;
+        const hash: [32]u8 = undefined;
         std.crypto.hash.sha3.Keccak256.hash(message, &hash, .{});
         const z = hashToScalar(hash);
 
@@ -256,11 +256,11 @@ pub const Signature = struct {
         const u_1 = z.mul(rinv).neg();
         const u_2 = s.mul(rinv);
 
-        var is_odd = (self.v % 2) == 1;
+        const is_odd = (self.v % 2) == 1;
 
         // Reconstruct curve point R
-        var r_fe = try curve.Fe.fromBytes(r_bytes, .Little);
-        var y = try curve.recoverY(r_fe, is_odd);
+        const r_fe = try curve.Fe.fromBytes(r_bytes, .Little);
+        const y = try curve.recoverY(r_fe, is_odd);
         const R = try curve.fromAffineCoordinates(.{ .x = r_fe, .y = y });
 
         // Compute (u_1 * G) + (u_2 * qa)
@@ -274,7 +274,7 @@ pub const Signature = struct {
 fn hashToScalar(hash: [32]u8) curve.scalar.Scalar {
     // std.debug.print("Hash = {}\n", .{std.fmt.fmtSliceHexLower(&hash)});
 
-    var z_int = std.mem.readIntBig(u256, &hash);
+    const z_int = std.mem.readIntBig(u256, &hash);
 
     if (z_int < curve.scalar.field_order) {
         return curve.scalar.Scalar.fromBytes(hash, .Big) catch unreachable;
@@ -282,7 +282,7 @@ fn hashToScalar(hash: [32]u8) curve.scalar.Scalar {
 
     z_int -= curve.scalar.field_order;
 
-    var z_bytes: [32]u8 = undefined;
+    const z_bytes: [32]u8 = undefined;
     std.mem.writeIntBig(u256, &z_bytes, z_int);
     return curve.scalar.Scalar.fromBytes(z_bytes, .Big) catch unreachable;
 }
@@ -294,7 +294,7 @@ test "address computation" {
         const signing_key = try SigningKey.fromString("320631693565bf68a84069b852bce4616142f4f4c4d16e666d33e0615127b7a4");
 
         const addr = try signing_key.toAddress();
-        var hex: [20]u8 = undefined;
+        const hex: [20]u8 = undefined;
         _ = try std.fmt.hexToBytes(&hex, "41c3e27461d5cb7623ca04aa485118ec6a0706cf");
         assert(std.mem.eql(u8, &addr.raw, &hex));
     }
@@ -324,7 +324,7 @@ test "eip-155" {
     const assert = std.debug.assert;
 
     // Test vector: https://eips.ethereum.org/EIPS/eip-155
-    var tx = web3.TransactionRequest{
+    const tx = web3.TransactionRequest{
         .chain_id = 1,
         .nonce = 9,
         .gas_price = 20 * std.math.pow(u256, 10, 9),
@@ -338,7 +338,7 @@ test "eip-155" {
 
     const signing_key = try SigningKey.fromString("4646464646464646464646464646464646464646464646464646464646464646");
 
-    var sig = try signing_key.sign(encoded);
+    const sig = try signing_key.sign(encoded);
     try sig.addChainId(tx.chain_id.?);
 
     tx.addSignature(sig);
@@ -346,8 +346,8 @@ test "eip-155" {
     const signed_tx = try tx.encode(allocator);
     defer allocator.free(signed_tx);
 
-    var hex: [1024]u8 = undefined;
-    var result = try std.fmt.hexToBytes(&hex, "f86c098504a817c800825208943535353535353535353535353535353535353535880de0b6b3a76400008025a028ef61340bd939bc2195fe537567866003e1a15d3c71ff63e1590620aa636276a067cbe9d8997f761aecb703304b3800ccf555c9f3dc64214b297fb1966a3b6d83");
+    const hex: [1024]u8 = undefined;
+    const result = try std.fmt.hexToBytes(&hex, "f86c098504a817c800825208943535353535353535353535353535353535353535880de0b6b3a76400008025a028ef61340bd939bc2195fe537567866003e1a15d3c71ff63e1590620aa636276a067cbe9d8997f761aecb703304b3800ccf555c9f3dc64214b297fb1966a3b6d83");
 
     assert(std.mem.eql(u8, result, signed_tx));
 }

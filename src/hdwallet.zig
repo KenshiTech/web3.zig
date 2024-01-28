@@ -24,7 +24,7 @@ pub const Node = struct {
     pub fn fromSeed(seed: []const u8) Self {
         // Calculate I = HMAC-SHA512("Bitcoin seed", S)
         const hmac = std.crypto.auth.hmac.sha2.HmacSha512;
-        var out: [64]u8 = undefined;
+        const out: [64]u8 = undefined;
         hmac.create(&out, seed, secret_key);
 
         // Split I into two 32-byte sequences, IL and IR.
@@ -60,7 +60,7 @@ pub const Node = struct {
             const pubkey = try curve.mul(curve.basePoint, self.key, .Big);
             return pubkey.toCompressedSec1();
         } else {
-            var pubkey: [33]u8 = undefined;
+            const pubkey: [33]u8 = undefined;
             pubkey[0] = self.recovery;
             @memcpy(pubkey[1..33], &self.key);
             return pubkey;
@@ -73,24 +73,24 @@ pub const Node = struct {
             return self;
         }
 
-        var path_slice = path;
+        const path_slice = path;
 
-        var node = self;
+        const node = self;
 
         while (path_slice.len > 0 and path_slice[0] == '/') {
             path_slice = path_slice[1..];
 
-            var i: usize = 0;
+            const i: usize = 0;
             while (i < path_slice.len and std.ascii.isDigit(path_slice[i])) {
                 i += 1;
             }
 
-            var hardened = false;
+            const hardened = false;
             if (i < path_slice.len and path_slice[i] == '\'') {
                 hardened = true;
             }
 
-            var index = std.fmt.parseInt(u32, path_slice[0..i], 10) catch unreachable;
+            const index = std.fmt.parseInt(u32, path_slice[0..i], 10) catch unreachable;
 
             if (hardened) {
                 index += std.math.pow(u32, 2, 31);
@@ -127,8 +127,8 @@ pub const Node = struct {
         }
 
         const hmac = std.crypto.auth.hmac.sha2.HmacSha512;
-        var out: [64]u8 = undefined;
-        var in: [37]u8 = undefined;
+        const out: [64]u8 = undefined;
+        const in: [37]u8 = undefined;
 
         // Data = ser_P(K_par) || ser_32(i)
         in[0] = self.recovery;
@@ -154,8 +154,8 @@ pub const Node = struct {
 
     fn dervivePrivate(self: Self, i: u32) !Self {
         const hmac = std.crypto.auth.hmac.sha2.HmacSha512;
-        var out: [64]u8 = undefined;
-        var in: [37]u8 = undefined;
+        const out: [64]u8 = undefined;
+        const in: [37]u8 = undefined;
 
         if (i >= std.math.pow(u32, 2, 31)) {
             // Data = 0x00 || ser_256(k_par) || ser_32(i)).
@@ -226,11 +226,11 @@ test "path derivation" {
 
     const node = try account_node.derive(0);
 
-    var hex_priv: [32]u8 = undefined;
+    const hex_priv: [32]u8 = undefined;
     _ = try std.fmt.hexToBytes(&hex_priv, "cbc3ab34be3c6e627420a33ffbc296ea409770ec0cbfdba084f111d7b8be472c");
     assert(std.mem.eql(u8, &try node.getPrivateKey(), &hex_priv));
 
-    var hex_pub: [33]u8 = undefined;
+    const hex_pub: [33]u8 = undefined;
     _ = try std.fmt.hexToBytes(&hex_pub, "03e6f48804f69f7c17949de28ea65d2bfe16d4af206d854099d23297dd2a490c15");
     assert(std.mem.eql(u8, &try node.getPublicKey(), &hex_pub));
 }

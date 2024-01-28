@@ -268,7 +268,7 @@ pub const JsonReader = struct {
             }
         }
 
-        var size: usize = @intFromPtr(_buffer) - @intFromPtr(buffer.ptr);
+        const size: usize = @intFromPtr(_buffer) - @intFromPtr(buffer.ptr);
         var slice = buffer.*[0..size];
 
         if (string) {
@@ -328,8 +328,8 @@ pub const JsonReader = struct {
             }
         }
 
-        var size: usize = @intFromPtr(_buffer) - @intFromPtr(buffer.ptr);
-        var slice = buffer.*[0..size];
+        const size: usize = @intFromPtr(_buffer) - @intFromPtr(buffer.ptr);
+        const slice = buffer.*[0..size];
         return try std.fmt.parseFloat(T, slice);
     }
 
@@ -374,7 +374,7 @@ pub const JsonReader = struct {
         while (_buffer.len > 0) {
             skipWhitespace(&_buffer);
 
-            var key = try parseString(&_buffer);
+            const key = try parseString(&_buffer);
 
             skipWhitespace(&_buffer);
 
@@ -771,7 +771,7 @@ pub const JsonReader = struct {
                                 return try ptr.child.fromStringAlloc(allocator, str);
                             }
                         } else {
-                            var val = try allocator.create(ptr.child);
+                            const val = try allocator.create(ptr.child);
                             val.* = try parse(allocator, buffer, ptr.child);
                             return val;
                         }
@@ -859,8 +859,8 @@ test "writing" {
             .world = 0x40,
         };
 
-        var buf: [32]u8 = undefined;
-        var fbs = std.io.fixedBufferStream(&buf);
+        const buf: [32]u8 = undefined;
+        const fbs = std.io.fixedBufferStream(&buf);
 
         const size = try JsonWriter.write(val, fbs.writer());
 
@@ -881,8 +881,8 @@ test "reading" {
 
         const buf = "{\"hello\":\"0x20\",\"world\":\"0x40\"}";
 
-        var ptr: []const u8 = buf[0..];
-        var result = try JsonReader.parse(allocator, &ptr, Struct);
+        const ptr: []const u8 = buf[0..];
+        const result = try JsonReader.parse(allocator, &ptr, Struct);
 
         assert(result.hello == 0x20);
         assert(result.world == 0x40);
@@ -897,8 +897,8 @@ test "reading" {
 
         const buf = "{\"hello\":\"0x20\"}";
 
-        var ptr: []const u8 = buf[0..];
-        var result = try JsonReader.parse(allocator, &ptr, Struct);
+        const ptr: []const u8 = buf[0..];
+        const result = try JsonReader.parse(allocator, &ptr, Struct);
 
         assert(result.hello == 0x20);
         assert(result.world == 0x60);
@@ -908,8 +908,8 @@ test "reading" {
     {
         const buf = "{";
 
-        var ptr: []const u8 = buf[0..];
-        var result = JsonReader.parse(allocator, &ptr, u32);
+        const ptr: []const u8 = buf[0..];
+        const result = JsonReader.parse(allocator, &ptr, u32);
         try std.testing.expectError(error.UnexpectedCharacter, result);
     }
 
@@ -922,8 +922,8 @@ test "reading" {
 
         const buf = "{\"hello";
 
-        var ptr: []const u8 = buf[0..];
-        var result = JsonReader.parse(allocator, &ptr, Struct);
+        const ptr: []const u8 = buf[0..];
+        const result = JsonReader.parse(allocator, &ptr, Struct);
         try std.testing.expectError(error.EndOfBuffer, result);
     }
 
@@ -936,8 +936,8 @@ test "reading" {
 
         const buf = "{\"hello\":\"0x20\"}";
 
-        var ptr: []const u8 = buf[0..];
-        var result = JsonReader.parse(allocator, &ptr, Struct);
+        const ptr: []const u8 = buf[0..];
+        const result = JsonReader.parse(allocator, &ptr, Struct);
         try std.testing.expectError(error.MissingRequiredField, result);
     }
 }
